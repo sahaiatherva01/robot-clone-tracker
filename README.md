@@ -1,6 +1,6 @@
 # **Robot Clone Tracker**
 
-### *A Real-Time Human Motion Mirroring.*
+### *A Real-Time Human Motion Mirroring*
 
 ## **Overview**
 
