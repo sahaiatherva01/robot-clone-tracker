@@ -1,6 +1,6 @@
 # **Robot Clone Tracker**
 
-### *A Real-Time Motion experiment built with Python, OpenCV, and MediaPipe.*
+### *A Real-Time Human Motion Mirroring.*
 
 ## **Overview**
 
