@@ -18,10 +18,10 @@ cap = cv2.VideoCapture(0)
 cap.set(3, 1280)
 cap.set(4, 720)
 
-PRIMARY_BLUE = (20, 40, 100)   
-ACCENT_CYAN = (255, 200, 80)   
-WHITE_CORE = (255, 240, 200)   
-SHADOW = (10, 20, 60)
+PRIMARY_BLUE = (30, 30, 180)  
+ACCENT_CYAN = (255, 180, 80)  
+WHITE_CORE = (255, 255, 220)   
+SHADOW = (10, 10, 80)           
 
 # ---- Data Recording ----
 fps_history = []
@@ -121,25 +121,29 @@ while cap.isOpened():
 
     if results.pose_landmarks:
 
-        lm = results.pose_landmarks.landmark
-        confidence_history.append(lm[0].visibility)
+        landmarks = results.pose_landmarks.landmark
+        
+        confidence_history.append(float(landmarks[0].visibility) if len(landmarks) > 0 else 0.0)
 
-        pts = [(int((1-lm.x)*w), int(lm.y*h)) for lm in lm]
+        pts = [(int((1 - l.x) * w), int(l.y * h)) for l in landmarks]
 
-        if prev_pts is not None:
-            movement = np.mean([np.linalg.norm(np.array(pts[i])-np.array(prev_pts[i])) for i in range(len(pts))])
+        if prev_pts is not None and len(prev_pts) == len(pts):
+            movement = np.mean([np.linalg.norm(np.array(pts[i]) - np.array(prev_pts[i])) for i in range(len(pts))])
         else:
             movement = 0
         motion_history.append(movement)
         prev_pts = pts.copy()
 
-        nose = pts[0]
-        Ls, Rs = pts[11], pts[12]
-        Le, Re = pts[13], pts[14]
-        Lw, Rw = pts[15], pts[16]
-        Lh, Rh = pts[23], pts[24]
-        Lk, Rk = pts[25], pts[26]
-        La, Ra = pts[27], pts[28]
+        def _pt(idx):
+            return pts[idx] if 0 <= idx < len(pts) else (w // 2, h // 2)
+
+        nose = _pt(0)
+        Ls, Rs = _pt(11), _pt(12)
+        Le, Re = _pt(13), _pt(14)
+        Lw, Rw = _pt(15), _pt(16)
+        Lh, Rh = _pt(23), _pt(24)
+        Lk, Rk = _pt(25), _pt(26)
+        La, Ra = _pt(27), _pt(28)
 
         draw_robot_head(glow, nose)
         draw_robot_torso(glow, Ls, Rs, Lh, Rh)
