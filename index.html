@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humanoid Robot Clone - Pose Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(30, 30, 180, 0.1);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(255, 180, 80, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #5555ff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            color: #ffb450;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 50px rgba(85, 85, 255, 0.3);
+            border: 3px solid rgba(255, 180, 80, 0.5);
+            min-height: 480px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #videoFeed {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loading-message {
+            color: #ffb450;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .status-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 26, 0.85);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 180, 80, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .status-dot.inactive {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats-panel {
+            background: rgba(30, 30, 180, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(255, 180, 80, 0.3);
+        }
+
+        .stats-panel h2 {
+            color: #ffb450;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card {
+            background: rgba(10, 10, 26, 0.6);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(85, 85, 255, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(85, 85, 255, 0.4);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #5555ff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-bar {
+            height: 8px;
+            background: rgba(85, 85, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5555ff, #00d4ff);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: rgba(30, 30, 180, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(255, 180, 80, 0.3);
+        }
+
+        .chart-card h3 {
+            color: #ffb450;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 200px !important;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #5555ff, #00d4ff);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(85, 85, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 180, 80, 0.2);
+            color: #ffb450;
+            border: 2px solid #ffb450;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 180, 80, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 15px;
+            background: rgba(10, 10, 26, 0.6);
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid rgba(85, 85, 255, 0.3);
+        }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.2);
+            border: 2px solid #ff4444;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Humanoid Robot Clone</h1>
+            <p class="subtitle">Real-Time Pose Tracking & Analytics</p>
+        </header>
+
+        <div id="errorContainer"></div>
+
+        <div class="main-content">
+            <div class="video-container">
+                <img id="videoFeed" style="display:none;" alt="Video Feed">
+                <div id="loadingMessage" class="loading-message">
+                    Loading video feed...
+                </div>
+                <div class="status-overlay">
+                    <div class="status-item">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <h2>📊 Live Statistics</h2>
+                
+                <div class="stat-card">
+                    <div class="stat-label">FPS</div>
+                    <div class="stat-value" id="fpsValue">0</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="fpsBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Confidence</div>
+                    <div class="stat-value" id="confidenceValue">0%</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="confidenceBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Motion Intensity</div>
+                    <div class="stat-value" id="motionValue">0</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="motionBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="resetStats()">Reset</button>
+                    <button class="btn btn-secondary" onclick="toggleCharts()">Toggle Charts</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-container" id="chartsContainer">
+            <div class="chart-card">
+                <h3>FPS Trend</h3>
+                <canvas id="fpsChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Confidence Trend</h3>
+                <canvas id="confidenceChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Motion Trend</h3>
+                <canvas id="motionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="connection-status">
+            <span id="connectionStatus">🔗 Initializing...</span>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:5000';
+        let isConnected = false;
+
+        const CHART_WINDOW = 50; // number of points to show in chart window
+
+        // Chart configuration
+        const chartConfig = {
+            type: 'line',
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        display: false,
+                        min: 0,
+                        max: CHART_WINDOW - 1,
+                        grid: { color: 'rgba(85, 85, 255, 0.1)' }
+                    },
+                    y: { 
+                        grid: { color: 'rgba(85, 85, 255, 0.1)' },
+                        ticks: { color: '#aaa' }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.4,
+                        borderWidth: 2
+                    },
+                    point: {
+                        radius: 0
+                    }
+                }
+            }
+        };
+
+        // Initialize charts
+        const fpsCtx = document.getElementById('fpsChart').getContext('2d');
+        const fpsChart = new Chart(fpsCtx, {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'FPS',
+                    data: [],
+                    borderColor: '#5555ff',
+                    backgroundColor: 'rgba(85, 85, 255, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+        const confidenceChart = new Chart(confidenceCtx, {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Confidence',
+                    data: [],
+                    borderColor: '#00ff88',
+                    backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        const motionCtx = document.getElementById('motionChart').getContext('2d');
+        const motionChart = new Chart(motionCtx, {
+            ...chartConfig,
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Motion',
+                    data: [],
+                    borderColor: '#ff4444',
+                    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        // Initialize video feed
+        function initVideoFeed() {
+            const videoFeed = document.getElementById('videoFeed');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            videoFeed.src = `${BACKEND_URL}/video_feed`;
+            
+            videoFeed.onload = function() {
+                loadingMessage.style.display = 'none';
+                videoFeed.style.display = 'block';
+                isConnected = true;
+                updateConnectionStatus('connected');
+            };
+            
+            videoFeed.onerror = function() {
+                loadingMessage.innerHTML = `
+                    <div style="color: #ff4444;">
+                        ❌ Cannot connect to video feed<br><br>
+                        <small>Make sure the Flask server is running:<br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 5px;">python server.py</code></small>
+                    </div>
+                `;
+                isConnected = false;
+                updateConnectionStatus('error');
+            };
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const connectionStatus = document.getElementById('connectionStatus');
+            
+            if (status === 'connected') {
+                statusDot.className = 'status-dot active';
+                statusText.textContent = 'System Active';
+                connectionStatus.textContent = '🔗 Connected to Backend';
+            } else if (status === 'error') {
+                statusDot.className = 'status-dot inactive';
+                statusText.textContent = 'Connection Failed';
+                connectionStatus.textContent = '❌ Cannot Connect to Backend';
+            } else {
+                statusDot.className = 'status-dot inactive';
+                statusText.textContent = 'Connecting...';
+                connectionStatus.textContent = '🔗 Initializing...';
+            }
+        }
+
+        // Fetch stats from backend
+        function updateStats() {
+            fetch(`${BACKEND_URL}/stats`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    isConnected = true;
+                    updateConnectionStatus('connected');
+                    
+                    // Update stat values
+                    document.getElementById('fpsValue').textContent = data.fps.toFixed(1);
+                    document.getElementById('confidenceValue').textContent = (data.confidence * 100).toFixed(1) + '%';
+                    document.getElementById('motionValue').textContent = data.motion.toFixed(1);
+
+                    // Update progress bars
+                    document.getElementById('fpsBar').style.width = Math.min((data.fps / 60) * 100, 100) + '%';
+                    document.getElementById('confidenceBar').style.width = (data.confidence * 100) + '%';
+                    document.getElementById('motionBar').style.width = Math.min((data.motion / 50) * 100, 100) + '%';
+
+                    // Update charts
+                    if (data.fps_history && data.fps_history.length > 0) {
+                        updateChart(fpsChart, data.fps_history.slice(-50));
+                        updateChart(confidenceChart, data.confidence_history.slice(-50).map(v => v * 100));
+                        updateChart(motionChart, data.motion_history.slice(-50));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching stats:', error);
+                    if (isConnected) {
+                        isConnected = false;
+                        updateConnectionStatus('error');
+                    }
+                });
+        }
+
+        function updateChart(chart, data) {
+            // Keep a fixed window and right-align latest points
+            const len = data.length;
+            const slice = data.slice(-CHART_WINDOW);
+            const offset = Math.max(0, CHART_WINDOW - slice.length);
+            const mapped = slice.map((v, i) => ({ x: offset + i, y: v }));
+            chart.data.datasets[0].data = mapped;
+            if (chart.options && chart.options.scales && chart.options.scales.x) {
+                chart.options.scales.x.min = 0;
+                chart.options.scales.x.max = CHART_WINDOW - 1;
+            }
+            chart.update('none');
+        }
+
+        function resetStats() {
+            fpsChart.data.datasets[0].data = [];
+            confidenceChart.data.datasets[0].data = [];
+            motionChart.data.datasets[0].data = [];
+            // ensure axis bounds remain for consistent right-aligned view
+            if (fpsChart.options && fpsChart.options.scales && fpsChart.options.scales.x) {
+                fpsChart.options.scales.x.min = 0; fpsChart.options.scales.x.max = CHART_WINDOW - 1;
+            }
+            if (confidenceChart.options && confidenceChart.options.scales && confidenceChart.options.scales.x) {
+                confidenceChart.options.scales.x.min = 0; confidenceChart.options.scales.x.max = CHART_WINDOW - 1;
+            }
+            if (motionChart.options && motionChart.options.scales && motionChart.options.scales.x) {
+                motionChart.options.scales.x.min = 0; motionChart.options.scales.x.max = CHART_WINDOW - 1;
+            }
+            fpsChart.update();
+            confidenceChart.update();
+            motionChart.update();
+        }
+
+        function toggleCharts() {
+            const container = document.getElementById('chartsContainer');
+            container.style.display = container.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        // Test backend connection
+        function testConnection() {
+            fetch(`${BACKEND_URL}/test`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Backend test successful:', data);
+                })
+                .catch(error => {
+                    console.error('Backend test failed:', error);
+                    showError();
+                });
+        }
+
+        function showError() {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <h3>⚠️ Backend Connection Error</h3>
+                    <p>Cannot connect to the Flask backend at ${BACKEND_URL}</p>
+                    <p><strong>To fix this:</strong></p>
+                    <ol style="text-align: left; display: inline-block; margin-top: 10px;">
+                        <li>Make sure you have installed: <code>pip install flask flask-cors opencv-python mediapipe</code></li>
+                        <li>Run the backend: <code>python server.py</code></li>
+                        <li>Refresh this page</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            console.log('Initializing Humanoid Robot Clone Frontend...');
+            testConnection();
+            initVideoFeed();
+            
+            // Update stats every 100ms
+            setInterval(updateStats, 100);
+        };
+    </script>
+</body>
+</html>
